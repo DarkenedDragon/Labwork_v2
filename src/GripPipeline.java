@@ -16,6 +16,7 @@ public class GripPipeline {
 	private Mat rgbThresholdOutput = new Mat();
 	private Mat cvErodeOutput = new Mat();
 	private Mat cvDilateOutput = new Mat();
+	private Mat roiOuput = new Mat();
 	
 	// Values
 	private double[] hueThreshold = {0, 180};
@@ -27,6 +28,10 @@ public class GripPipeline {
 	private double[] blueThreshold = {0, 255};
 
 	private boolean hsl = true;
+	private boolean roi = false;
+
+	private Point roiTopCorner;
+	private Point roiBottomCorner;
 
 	static {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -36,8 +41,19 @@ public class GripPipeline {
 	 * This is the primary method that runs the entire pipeline and updates the outputs.
 	 */
 	public void process(Mat source0) {
+		//System.out.println("Image processing");
+
+		// Step ROI (if enabled)
+		Mat cvGaussianblurSrc;
+		if (roi) {
+			Mat roiSource = source0;
+			ROI(roiSource);
+			cvGaussianblurSrc = roiOuput;
+		}else {
+			cvGaussianblurSrc = source0;
+		}
+
 		// Step CV_GaussianBlur0:
-		Mat cvGaussianblurSrc = source0;
 		Size cvGaussianblurKsize = new Size(1, 1);
 		double cvGaussianblurSigmax = 5.0;
 		double cvGaussianblurSigmay = 5.0;
@@ -85,8 +101,17 @@ public class GripPipeline {
 
 	}
 
-	public void switchModes(){
+	public void switchThresholdModes(){
 		hsl = !hsl;
+	}
+
+	public void enableROI(Point topCorner, Point bottomCorner) {
+		roiTopCorner = topCorner;
+		roiBottomCorner = bottomCorner;
+		roi = true;
+	}
+	public void disbleROI() {
+		roi = false;
 	}
 
 	/**
@@ -185,6 +210,14 @@ public class GripPipeline {
 		return cvDilateOutput;
 	}
 
+	public Mat roiPreview(Mat input) {
+		if (roi) {
+			ROI(input, roiTopCorner, roiBottomCorner);
+		}
+		return roiOuput;
+	}
+
+
 
 
 	/**
@@ -269,6 +302,17 @@ public class GripPipeline {
 	}
 
 
+	/**
+	 * Filter out an area of an image using a binary mask.
+	 * @param input The image on which the mask filters.
+	 * @param mask The binary image that is used to filter.
+	 * @param output The image in which to store the output.
+	 */
+	private void mask(Mat input, Mat mask, Mat output) {
+		mask.convertTo(mask, CvType.CV_8UC1);
+		Core.bitwise_xor(output, output, output);
+		input.copyTo(output, mask);
+	}
 
 	/**
 	 * Segment an image based on color ranges.
@@ -285,7 +329,29 @@ public class GripPipeline {
 				new Scalar(red[1], green[1], blue[1]), out);
 	}
 
+	private void ROI(Mat input){
+		if (roiTopCorner != null && roiBottomCorner != null) {
+			System.out.println("ROI setup");
+			ROI(input, roiTopCorner, roiBottomCorner);
+		}
+	}
 
+	private void ROI(Mat input, Point topCorner, Point bottomCorner){
+		System.out.println("ROI processing ran");
+		// Draw a rectangle here
+
+		Mat canvas = new Mat(input.rows(), input.cols(), input.type(), new Scalar(0));
+		Imgproc.rectangle(canvas, topCorner, bottomCorner, new Scalar(255, 255, 255), Imgproc.FILLED);
+
+
+		int x = (int)topCorner.x;
+		int y = (int)topCorner.y;
+		int w = (int)(bottomCorner.x - topCorner.x);
+		int h = (int)(bottomCorner.y - topCorner.y);
+
+		Rect roi = new Rect(x, y, w, h);
+		mask(input, canvas, roiOuput);
+	}
 
 }
 

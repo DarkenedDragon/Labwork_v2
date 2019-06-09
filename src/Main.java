@@ -1,7 +1,10 @@
 import controlP5.*;
 import controlP5.Button;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import processing.core.PApplet;
 import processing.core.PImage;
 
@@ -21,19 +24,34 @@ public class Main extends PApplet{
     private final int RANGE_HEIGHT = 40;
     private final int BACKGROUND_COLOR = 255; // White
     private int originalDisplayImageX, originalDisplayImageY, originalDisplayImageW, originalDisplayImageH;
+    private int displayImageBoundaryX, displayImageBoundaryY, displayImageBoundaryWidth, displayImageBoundaryHeight;
     private int controlsX, controlsWidth, controlsHeight, controlsPadding, controlsStartY, controlsTextPadding;
-    private boolean colorDropperEnbabled, hslVisited, rgbVisited;
+    private boolean colorDropperEnbabled, hslVisited, rgbVisited, ROIEnabled;
+    private boolean topCornerSelected = false;
+    private boolean bottomCornerSelected = false;
+    private String initalImageFilepath;
+    private String allImagesFilepath;
 
     private Range hueRange, saturationRange, luminescenceRange;
     private Range redRange, greenRange, blueRange;
     private Toggle thresholdToggle;
+    private Toggle ROISwitch;
     private Button colorDropperButton;
+    private Button confirmButton;
+    private Button selectImagesButton;
+
+    Point topCorner;
+    Point bottomCorner;
 
     private enum Threshold {
         HSL, RGB
     }
     private Threshold mode = Threshold.HSL;
 
+    private enum STAGE {
+        SELECT_INITAL_IMAGE, SELECT_VALUES, LOAD_IMAGES, RUN_ANALYSIS
+    }
+    private STAGE stage = STAGE.SELECT_INITAL_IMAGE;
     @Override
     public void settings() {
         size(1200, 800);
@@ -133,15 +151,45 @@ public class Main extends PApplet{
                 .setBroadcast(true);
 
         colorDropperButton = cp5.addButton("colorDropperButton")
+                .setBroadcast(false)
                 .setPosition(controlsX + controlsWidth/2 + 90, 4*controlsTextPadding + 3*RANGE_HEIGHT)
-                .setSize(30, 30)
+                .setSize(32, 32)
                 .setValue(0)
                 .setImage(colorDropperImg)
                 .setVisible(false)
-                .setLock(true);
+                .setLock(true)
+                .setBroadcast(true);
+
+        confirmButton = cp5.addButton("Confirm")
+                .setBroadcast(false)
+                .setPosition(controlsX + controlsWidth/2 - 36, 5*controlsTextPadding + 4*RANGE_HEIGHT - 20)
+                .setSize(76, 50)
+                .setValue(0)
+                .setBroadcast(true);
+
+        confirmButton.getCaptionLabel().setSize(20);
+
+        ROISwitch = cp5.addToggle("ROI")
+                .setBroadcast(false)
+                .setPosition(controlsX + controlsWidth/2 - 120, 4*controlsTextPadding + 3*RANGE_HEIGHT)
+                .setSize(30, 30)
+                .setVisible(false)
+                .setLock(true)
+                .setBroadcast(true);
+
+        selectImagesButton = cp5.addButton("Select Image")
+                .setBroadcast(false)
+                .setPosition((controlsX - controlsPadding)/2, height/2)
+                .setSize(100, 20)
+                .setBroadcast(true);
+
+        selectImagesButton.getCaptionLabel().setSize(12);
 
         // Initialize color dropper
         colorDropperEnbabled = false;
+
+        // Initialize ROI
+        ROIEnabled = false;
 
         // Initialize mode. Default is HSL
         mode = Threshold.HSL;
@@ -151,9 +199,10 @@ public class Main extends PApplet{
 
         // Load inital image
         initialImage = Imgcodecs.imread("res/images/image.JPG");
+        Imgproc.resize(initialImage, initialImage, new Size(controlsX - controlsPadding, height));
 
         // Process image, should be all white since the ranges are maxed
-        imagePipeline.process(initialImage);
+        //imagePipeline.process(initialImage);
 
         //displayImage = toPImage(imagePipeline.cvDilateOutput());
         //displayImage.resize(controlsX - controlsPadding, height);
@@ -168,55 +217,114 @@ public class Main extends PApplet{
         originalDisplayImageY = height - originalDisplayImage.height - controlsPadding;
         originalDisplayImageH = originalDisplayImageW = controlsWidth;
 
+        displayImageBoundaryX = 0;
+        displayImageBoundaryY = 0;
+        displayImageBoundaryWidth = controlsX - controlsPadding;
+        displayImageBoundaryHeight = height;
+
         image(displayImage, 0.0f, 0.0f);
         image(originalDisplayImage, originalDisplayImageX, originalDisplayImageY);
 
         // Misc.
         hslVisited = false;
         rgbVisited = false;
+
+        topCorner = new Point(0,0);
+        bottomCorner = new Point(displayImage.width, displayImage.height);
     }
 
     @Override
     public void draw() {
         background(BACKGROUND_COLOR);
 
-        image(displayImage, 0.0f, 0.0f);
-        image(originalDisplayImage, originalDisplayImageX, originalDisplayImageY);
+        switch (stage){
+            case SELECT_INITAL_IMAGE:
 
-        // Draw range labels
-        fill(0);
-        if (mode == Threshold.HSL) {
-            text(hueRange.getLabel(), hueRange.getPosition()[0], hueRange.getPosition()[1] - 10);
-            text(saturationRange.getLabel(), saturationRange.getPosition()[0], saturationRange.getPosition()[1] - 10);
-            text(luminescenceRange.getLabel(), luminescenceRange.getPosition()[0], luminescenceRange.getPosition()[1] - 10);
-        }else if (mode == Threshold.RGB){
-            text(redRange.getLabel(), redRange.getPosition()[0], redRange.getPosition()[1] - 10);
-            text(greenRange.getLabel(), greenRange.getPosition()[0], greenRange.getPosition()[1] - 10);
-            text(blueRange.getLabel(), blueRange.getPosition()[0], blueRange.getPosition()[1] - 10);
-        }
+                break;
+            case SELECT_VALUES:
+                image(displayImage, 0.0f, 0.0f);
+                image(originalDisplayImage, originalDisplayImageX, originalDisplayImageY);
 
-        text("HSL",
-                thresholdToggle.getPosition()[0] - thresholdToggle.getWidth()/2,
-                thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
-        text("RGB",
-                thresholdToggle.getPosition()[0] + thresholdToggle.getWidth() + 6,
-                thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
+                // Draw range labels
+                fill(0);
+                if (mode == Threshold.HSL) {
+                    text(hueRange.getLabel(), hueRange.getPosition()[0], hueRange.getPosition()[1] - 10);
+                    text(saturationRange.getLabel(), saturationRange.getPosition()[0], saturationRange.getPosition()[1] - 10);
+                    text(luminescenceRange.getLabel(), luminescenceRange.getPosition()[0], luminescenceRange.getPosition()[1] - 10);
+                }else if (mode == Threshold.RGB){
+                    text(redRange.getLabel(), redRange.getPosition()[0], redRange.getPosition()[1] - 10);
+                    text(greenRange.getLabel(), greenRange.getPosition()[0], greenRange.getPosition()[1] - 10);
+                    text(blueRange.getLabel(), blueRange.getPosition()[0], blueRange.getPosition()[1] - 10);
+                }
 
-        text("Unprocessed Image", controlsX, height - originalDisplayImage.height - controlsPadding + controlsWidth + 12);
 
-        // Change the cursor to the color dropper when in the appropriate area
-        // which is below the threshold toggle and bounded the original image
-        if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageW) &&
-                inRange(mouseY, controlsStartY + 4*controlsTextPadding + 3*RANGE_HEIGHT, originalDisplayImageY + originalDisplayImageH) &&
-                mode == Threshold.RGB && colorDropperEnbabled) {
-            cursor(colorDropperImg, 0, 0);
-        }else{
-            cursor(ARROW);
+
+                text("HSL",
+                        thresholdToggle.getPosition()[0] - thresholdToggle.getWidth()/2,
+                        thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
+                text("RGB",
+                        thresholdToggle.getPosition()[0] + thresholdToggle.getWidth() + 6,
+                        thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
+
+                text("Unprocessed Image", controlsX, height - originalDisplayImage.height - controlsPadding + controlsWidth + 12);
+
+
+                // Change the cursor to the color dropper when in the appropriate area
+                // which is below the threshold toggle and bounded the original image
+                if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageW) &&
+                        inRange(mouseY, controlsStartY + 4 * controlsTextPadding + 3 * RANGE_HEIGHT, originalDisplayImageY + originalDisplayImageH) &&
+                        mode == Threshold.RGB && colorDropperEnbabled) {
+
+                    cursor(colorDropperImg, 0, 0);
+                } else {
+                    cursor(ARROW);
+                }
+
+
+                break;
+            case LOAD_IMAGES:
+                image(displayImage, 0.0f, 0.0f);
+
+                text("ROI",
+                        ROISwitch.getPosition()[0] - ROISwitch.getWidth(),
+                        ROISwitch.getPosition()[1] + ROISwitch.getHeight()/2 + 3);
+
+                if (ROIEnabled) {
+                    cursor(CROSS);
+                    colorDropperEnbabled = false;
+                }
+
+
+                break;
+            case RUN_ANALYSIS:
+                break;
         }
     }
 
     @Override
     public void mouseClicked() {
+        // ROI
+        if (ROIEnabled && inRange(mouseX, displayImageBoundaryX, displayImageBoundaryX + displayImageBoundaryWidth) &&
+        inRange(mouseY, displayImageBoundaryY, displayImageBoundaryY + displayImageBoundaryHeight)) {
+            // Stuff here
+            // Because displayImage is from 0,0 it coordinates should be the windows
+            if (!topCornerSelected) {
+                topCornerSelected = true;
+                topCorner = new Point(mouseX, mouseY);
+            }else if (topCornerSelected && !bottomCornerSelected) {
+                bottomCornerSelected = true;
+                bottomCorner = new Point(mouseX, mouseY);
+                System.out.println("Top Corner: x=" + topCorner.x + " y=" + topCorner.y);
+                System.out.println("Bottom Corner: x=" + bottomCorner.x + " y=" + bottomCorner.y);
+
+                //imagePipeline.enableROI(topCorner, bottomCorner);
+                //imagePipeline.process(initialImage);
+                //displayImage = toPImage(imagePipeline.cvDilateOutput());
+                //displayImage = toPImage(imagePipeline.roiPreview(initialImage));
+            }
+
+        }
+
         // Color dropper effect
         int color = get(mouseX, mouseY);
         /*
@@ -227,7 +335,8 @@ public class Main extends PApplet{
         */
         if (mode == Threshold.RGB) {
             if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageW) &&
-            inRange(mouseY, originalDisplayImageY, originalDisplayImageY + originalDisplayImageH)) {
+            inRange(mouseY, originalDisplayImageY, originalDisplayImageY + originalDisplayImageH) &&
+            colorDropperEnbabled) {
                 final int radius = 20;
                 redRange.setRangeValues(red(color) - radius, red(color) + radius);
                 greenRange.setRangeValues(green(color) - radius, green(color) + radius);
@@ -244,6 +353,16 @@ public class Main extends PApplet{
         colorDropperEnbabled = !colorDropperEnbabled;
     }
 
+
+    /**
+     * Event handler for the ROI toggle
+     * @param theValue
+     */
+    public void ROI(int theValue){
+        System.out.println("ROI selected");
+        ROIEnabled = ROISwitch.getBooleanValue();
+    }
+
     /**
      * Event handler for the threshold switch toggle
      * @param theFlag
@@ -255,8 +374,7 @@ public class Main extends PApplet{
     private void switchModes(){
         if (mode == Threshold.HSL) {
             mode = Threshold.RGB;
-            rgbVisited = true;
-            imagePipeline.switchModes();
+            imagePipeline.switchThresholdModes();
 
             hueRange.setVisible(false);
             saturationRange.setVisible(false);
@@ -276,8 +394,7 @@ public class Main extends PApplet{
 
         }else if (mode == Threshold.RGB) {
             mode = Threshold.HSL;
-            hslVisited = true;
-            imagePipeline.switchModes();
+            imagePipeline.switchThresholdModes();
 
             hueRange.setVisible(true);
             saturationRange.setVisible(true);
@@ -302,6 +419,7 @@ public class Main extends PApplet{
         if (mode == Threshold.RGB && !rgbVisited) {
             displayImage = originalDisplayImage.copy();
             displayImage.resize(controlsX - controlsPadding, height);
+            rgbVisited = true;
         }else if (mode == Threshold.RGB && rgbVisited) {
             imagePipeline.process(initialImage);
             displayImage = toPImage(imagePipeline.cvDilateOutput());
@@ -311,6 +429,7 @@ public class Main extends PApplet{
         if (mode == Threshold.HSL && !hslVisited) {
             displayImage = originalDisplayImage.copy();
             displayImage.resize(controlsX - controlsPadding, height);
+            hslVisited = true;
         }else if (mode == Threshold.HSL && hslVisited) {
             imagePipeline.process(initialImage);
             displayImage = toPImage(imagePipeline.cvDilateOutput());
@@ -324,6 +443,38 @@ public class Main extends PApplet{
      */
     public void controlEvent(ControlEvent controlEvent){
         boolean processingRequired = false; // Probably not necessary or clean
+
+        if (controlEvent.isFrom("Confirm")) {
+            System.out.println("Confirmed!");
+            stage = STAGE.LOAD_IMAGES;
+
+            // Remove the old GUI elements
+            hueRange.setVisible(false);
+            saturationRange.setVisible(false);
+            luminescenceRange.setVisible(false);
+            redRange.setVisible(false);
+            greenRange.setVisible(false);
+            blueRange.setVisible(false);
+            colorDropperButton.setVisible(false);
+            thresholdToggle.setVisible(false);
+
+            hueRange.setLock(true);
+            saturationRange.setLock(true);
+            luminescenceRange.setLock(true);
+            redRange.setLock(true);
+            greenRange.setLock(true);
+            blueRange.setLock(true);
+            colorDropperButton.setLock(true);
+            thresholdToggle.setLock(true);
+
+            ROISwitch.setVisible(true);
+            ROISwitch.setLock(false);
+
+            //System.out.println("ROI state: " + ROISwitch.getInfo());
+
+            //confirmButton.setVisible(false);
+            //confirmButton.setLock(true);
+        }
 
         if (mode == Threshold.HSL){
             if (controlEvent.isFrom("Hue")){
