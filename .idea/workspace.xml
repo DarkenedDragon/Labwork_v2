@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="f4ec521b-cb44-4d08-95e5-afb5b2874fb8" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Labwork/GripPipeline.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/GripPipeline.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Labwork/Main$Threshold.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/Main$Threshold.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/Labwork/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/Main.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/GripPipeline.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/GripPipeline.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
@@ -24,14 +22,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Main.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-173">
-              <caret line="862" column="77" lean-forward="true" selection-start-line="862" selection-start-column="77" selection-end-line="862" selection-end-column="77" />
+            <state relative-caret-position="286">
+              <caret line="434" column="66" selection-start-line="434" selection-start-column="66" selection-end-line="434" selection-end-column="66" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#17748#17749#0" expanded="true" />
-                <element signature="e#17808#17809#0" expanded="true" />
-                <element signature="e#18208#18209#0" expanded="true" />
-                <element signature="e#18237#18238#0" expanded="true" />
+                <element signature="e#38607#38608#0" expanded="true" />
+                <element signature="e#38641#38642#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -40,10 +36,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/GripPipeline.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2312">
-              <caret line="217" column="21" selection-start-line="217" selection-start-column="21" selection-end-line="217" selection-end-column="21" />
+            <state relative-caret-position="235">
+              <caret line="216" column="14" selection-start-line="216" selection-start-column="14" selection-end-line="216" selection-end-column="14" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#3430#3431#0" expanded="true" />
                 <element signature="e#3448#3449#0" expanded="true" />
               </folding>
             </state>
@@ -67,11 +64,13 @@
       <find>false</find>
       <find>files</find>
       <find>files != null</find>
+      <find>color</find>
     </findStrings>
     <replaceStrings>
       <replace>sat</replace>
       <replace>lum</replace>
       <replace>true</replace>
+      <replace>colr</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -80,8 +79,9 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/GripPipeline.java" />
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/src/ImageAnalyzer.java" />
+        <option value="$PROJECT_DIR$/src/GripPipeline.java" />
         <option value="$PROJECT_DIR$/src/Main.java" />
       </list>
     </option>
@@ -96,7 +96,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
@@ -123,6 +122,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -153,9 +153,17 @@
       </list>
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.Main">
     <configuration default="true" type="Applet">
       <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ImageAnalyzer" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="ImageAnalyzer" />
+      <module name="Labwork" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -202,6 +210,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Application.Main" />
+        <item itemvalue="Application.ImageAnalyzer" />
       </list>
     </recent_temporary>
   </component>
@@ -230,14 +239,21 @@
       <option name="project" value="LOCAL" />
       <updated>1560120087044</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="added analysis">
+      <created>1560133153436</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1560133153436</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26153848" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26639676" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -269,7 +285,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="add .gitignore" />
     <MESSAGE value="Added confirm button" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added confirm button" />
+    <MESSAGE value="added analysis" />
+    <option name="LAST_COMMIT_MESSAGE" value="added analysis" />
   </component>
   <component name="editorHistoryManager">
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/awt/image/ColorModel.java">
@@ -361,34 +378,47 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/GripPipeline.java">
+    <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2312">
-          <caret line="217" column="21" selection-start-line="217" selection-start-column="21" selection-end-line="217" selection-end-column="21" />
+        <state relative-caret-position="136">
+          <caret line="8" column="5" selection-start-line="8" selection-start-column="5" selection-end-line="8" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/ImageAnalyzer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-14229">
+          <caret line="48" column="4" selection-start-line="48" selection-start-column="4" selection-end-line="48" selection-end-column="4" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#20760#20761#0" expanded="true" />
+            <element signature="e#20820#20821#0" expanded="true" />
+            <element signature="e#20960#20961#0" expanded="true" />
+            <element signature="e#20989#20990#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/GripPipeline.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="235">
+          <caret line="216" column="14" selection-start-line="216" selection-start-column="14" selection-end-line="216" selection-end-column="14" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#3430#3431#0" expanded="true" />
             <element signature="e#3448#3449#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="9" selection-start-line="7" selection-start-column="9" selection-end-line="7" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Main.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-173">
-          <caret line="862" column="77" lean-forward="true" selection-start-line="862" selection-start-column="77" selection-end-line="862" selection-end-column="77" />
+        <state relative-caret-position="286">
+          <caret line="434" column="66" selection-start-line="434" selection-start-column="66" selection-end-line="434" selection-end-column="66" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#17748#17749#0" expanded="true" />
-            <element signature="e#17808#17809#0" expanded="true" />
-            <element signature="e#18208#18209#0" expanded="true" />
-            <element signature="e#18237#18238#0" expanded="true" />
+            <element signature="e#38607#38608#0" expanded="true" />
+            <element signature="e#38641#38642#0" expanded="true" />
           </folding>
         </state>
       </provider>

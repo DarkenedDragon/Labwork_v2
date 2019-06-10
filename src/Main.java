@@ -43,6 +43,7 @@ public class Main extends PApplet{
     private String initalImageFilepath;
     private String allImagesFilepath;
     private String imgErrorMessage = "";
+    private String time;
 
     private Range hueRange, saturationRange, luminescenceRange;
     private Range redRange, greenRange, blueRange;
@@ -56,6 +57,10 @@ public class Main extends PApplet{
 
     private Point topCorner;
     private Point bottomCorner;
+
+    private PrintWriter textOutput;
+    private Table csvOutput;
+    private DecimalFormat df;
 
     private enum Threshold {
         HSL, RGB
@@ -251,6 +256,19 @@ public class Main extends PApplet{
 
         topCorner = new Point(0,0);
         bottomCorner = new Point(displayImageBoundaryWidth, displayImageBoundaryHeight);
+
+        // File writing
+        Date date = new Date();
+        DateFormat format = new SimpleDateFormat("yyyy_MM_dd_HH_mm");
+        df = new DecimalFormat("#.###");
+        time = format.format(date);
+
+        textOutput = createWriter("Results\\results_" + time + ".txt");
+        csvOutput = new Table();
+        csvOutput.addColumn("Filename");
+        csvOutput.addColumn("Elapsed Time (sec)");
+        csvOutput.addColumn("Highest Pixel");
+        csvOutput.addColumn("Lowest Pixel");
     }
 
     @Override
@@ -344,6 +362,8 @@ public class Main extends PApplet{
                 if (files != null) {
                     try {
                         image(displayImage, 0.0f, 0.0f);
+                        // For debug purposes
+                        //image(originalDisplayImage, originalDisplayImageX, originalDisplayImageY);
                     }catch (NullPointerException e){
                         imgErrorMessage = "Unable to load images. Please select a folder with images";
                         text(imgErrorMessage, selectImagesButton.getPosition()[0] - (textWidth(imgErrorMessage) - selectImagesButton.getWidth())/2, selectImagesButton.getPosition()[1] - selectImagesButton.getHeight());
@@ -377,8 +397,6 @@ public class Main extends PApplet{
                     ROIEnabled = false;
                     cursor(ARROW);
                 }
-
-
                 break;
             case RUN_ANALYSIS:
                 image(displayImage, 0.0f, 0.0f);
@@ -409,6 +427,15 @@ public class Main extends PApplet{
     }
 
     @Override
+    public void stop() {
+        super.stop();
+        // Close the writers
+        textOutput.flush();
+        textOutput.close();
+        saveTable(csvOutput, "Results\\results_" + time + ".csv");
+    }
+
+    @Override
     public void mouseClicked() {
         // ROI
         if (ROIEnabled && inRange(mouseX, displayImageBoundaryX, displayImageBoundaryX + displayImageBoundaryWidth) &&
@@ -417,17 +444,34 @@ public class Main extends PApplet{
             // Because displayImage is from 0,0 it coordinates should be the windows
             if (!topCornerSelected) {
                 topCornerSelected = true;
-                topCorner = new Point(mouseX, mouseY);
+                int x = (int)map(mouseX, 0, displayImageBoundaryWidth, 0, initialImage.width());
+                int y = (int)map(mouseY, 0, displayImageBoundaryHeight, 0, initialImage.height());
+                topCorner = new Point(x, y);
             }else if (topCornerSelected && !bottomCornerSelected) {
                 bottomCornerSelected = true;
-                bottomCorner = new Point(mouseX, mouseY);
+                int x = (int)map(mouseX, 0, displayImageBoundaryWidth, 0, initialImage.width());
+                int y = (int)map(mouseY, 0, displayImageBoundaryHeight, 0, initialImage.height());
+                bottomCorner = new Point(x, y);
                 System.out.println("Top Corner: x=" + topCorner.x + " y=" + topCorner.y);
                 System.out.println("Bottom Corner: x=" + bottomCorner.x + " y=" + bottomCorner.y);
 
-                Mat roiImage = new Mat();
-                initialImage.copyTo(roiImage);
+                Mat newImage = Imgcodecs.imread(files[files.length - 1].getAbsolutePath());
+                /*
+                System.out.println("Image width: " + newImage.width());
+                System.out.println("Image height: " + newImage.height());
+                System.out.println("Display width: " + displayImage.width);
+                System.out.println("Display height: " + displayImage.height);
+                System.out.println("Bottom corner mapped: " + map(mouseX, 0, displayImageBoundaryWidth, 0, newImage.width()));
+                System.out.println("Display image w: " + displayImageBoundaryWidth + " h: " + displayImageBoundaryHeight);
+                */
+                Imgproc.resize(newImage, newImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+
                 imagePipeline.enableROI(topCorner, bottomCorner);
-                displayImage = toPImage(imagePipeline.roiPreview(roiImage));
+                //imagePipeline.process(newImage);
+
+                displayImage = toPImage(imagePipeline.roiPreview(newImage));
+                //originalDisplayImage = toPImage(imagePipeline.cvDilateOutput());
+                //originalDisplayImage.resize(originalDisplayImageWidth, originalDisplayImageHeight);
 
                 topCornerSelected = false;
                 bottomCornerSelected = false;
@@ -435,22 +479,22 @@ public class Main extends PApplet{
 
         }
 
-        // Color dropper effect
-        int color = get(mouseX, mouseY);
+        // color dropper effect
+        int colr = get(mouseX, mouseY);
         /*
-        System.out.println(color);
-        System.out.println("Red: " + red(color));
-        System.out.println("Green: " + green(color));
-        System.out.println("Blue: " + blue(color));
+        System.out.println(colr);
+        System.out.println("Red: " + red(colr));
+        System.out.println("Green: " + green(colr));
+        System.out.println("Blue: " + blue(colr));
         */
         if (mode == Threshold.RGB) {
             if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageWidth) &&
             inRange(mouseY, originalDisplayImageY, originalDisplayImageY + originalDisplayImageHeight) &&
             colorDropperEnbabled) {
                 final int radius = 20;
-                redRange.setRangeValues(red(color) - radius, red(color) + radius);
-                greenRange.setRangeValues(green(color) - radius, green(color) + radius);
-                blueRange.setRangeValues(blue(color) - radius, blue(color) + radius);
+                redRange.setRangeValues(red(colr) - radius, red(colr) + radius);
+                greenRange.setRangeValues(green(colr) - radius, green(colr) + radius);
+                blueRange.setRangeValues(blue(colr) - radius, blue(colr) + radius);
             }
         }
     }
@@ -499,14 +543,20 @@ public class Main extends PApplet{
                 files = directory.listFiles();
 
                 try {
-                    displayImage = loadImage(files[files.length - 1].getAbsolutePath());
-                    displayImage.resize(displayImageBoundaryWidth, displayImageBoundaryHeight);
+                    Mat newImage = Imgcodecs.imread(files[files.length - 1].getAbsolutePath());
+                    Imgproc.resize(newImage, newImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+                    displayImage = toPImage(newImage);
+                    //displayImage.resize(displayImageBoundaryWidth, displayImageBoundaryHeight);
+
+                    Thread.sleep(100);
 
                     // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
                     selectImagesButton.setPosition(width + 100, height + 100);
                 } catch(NullPointerException e) {
                     //e.printStackTrace();
                     imgErrorMessage = "Unable to load images. Please select a folder with images";
+                } catch (InterruptedException e) {
+                   // e.printStackTrace();
                 }
 
                 //ROISwitch.setLock(true);
@@ -801,19 +851,6 @@ public class Main extends PApplet{
     }
 
     public void analyze(){
-        // Contains the results
-        Date date = new Date();
-        DateFormat format = new SimpleDateFormat("yyyy_MM_dd_HH_mm");
-        DecimalFormat df = new DecimalFormat("#.###");
-        String time = format.format(date);
-
-        PrintWriter textOutput = createWriter("Results\\results_" + time + ".txt");
-        Table csvOutput = new Table();
-        csvOutput.addColumn("Filename");
-        csvOutput.addColumn("Elapsed Time (sec)");
-        csvOutput.addColumn("Highest Pixel");
-        csvOutput.addColumn("Lowest Pixel");
-
         //Nice things
         percentDone = 0;
 
@@ -821,9 +858,9 @@ public class Main extends PApplet{
 
         for (int i = 0; i< files.length; i++) {
             percentDone = (int)(((double)i / files.length) * 100.0);
-            System.out.println((i / files.length) * 100.0);
             // Load in image
             Mat sourceImage = Imgcodecs.imread(files[i].getAbsolutePath());
+            Imgproc.resize(sourceImage, sourceImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
 
             // Process the image
             imagePipeline.process(sourceImage);
@@ -833,36 +870,53 @@ public class Main extends PApplet{
             Mat hierarchy = new Mat();
             Imgproc.findContours(imagePipeline.cvDilateOutput(), contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
 
-            // Find largest contour
-            MatOfPoint largestContour = contours.get(0);
-            for (MatOfPoint contour : contours){
-                if (Imgproc.contourArea(contour) > Imgproc.contourArea(largestContour)) {
-                    largestContour = contour;
-                }
-            }
-
-            // Get bounding box
-            Rect boundingRect = Imgproc.boundingRect(largestContour);
-            Point topCorner = new Point(boundingRect.x, boundingRect.y);
-            Point bottomCorner = new Point(boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height);
-            // Draw bounding box
-            Imgproc.rectangle(sourceImage, topCorner, bottomCorner, new Scalar(0, 255, 0), 5);
-
-            // Resize
             Mat outputImage = new Mat();
-            Imgproc.resize(sourceImage, outputImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+            if (contours.size() > 0) {
+                // Find largest contour
+                MatOfPoint largestContour = contours.get(0);
+                for (MatOfPoint contour : contours){
+                    if (Imgproc.contourArea(contour) > Imgproc.contourArea(largestContour)) {
+                        largestContour = contour;
+                    }
+                }
 
-            // Record results
-            //output.print("Image " + f.getName() + " lowest point : " + lowPoint[file] + " pixels");
-            textOutput.println("Image " + files[i].getName() +
-                    " highest pixel: " + boundingRect.y +
-                    " lowest pixel: " + (boundingRect.y + boundingRect.height) +
-                    " elapsed time: " + df.format(timeInterval * i));
-            TableRow row = csvOutput.addRow();
-            row.setString("Filename", files[i].getName());
-            row.setString("Elapsed Time (sec)", df.format(timeInterval * i));
-            row.setInt("Highest Pixel", boundingRect.y);
-            row.setInt("Lowest Pixel", boundingRect.y + boundingRect.height);
+                // Get bounding box
+                Rect boundingRect = Imgproc.boundingRect(largestContour);
+                Point topCorner = new Point(boundingRect.x, boundingRect.y);
+                Point bottomCorner = new Point(boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height);
+                // Draw bounding box
+                Imgproc.rectangle(sourceImage, topCorner, bottomCorner, new Scalar(0, 255, 0), 3);
+
+                // Resize
+                Imgproc.resize(sourceImage, outputImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+
+                // Record results
+                //output.print("Image " + f.getName() + " lowest point : " + lowPoint[file] + " pixels");
+                textOutput.println("Image " + files[i].getName() +
+                        " highest pixel: " + boundingRect.y +
+                        " lowest pixel: " + (boundingRect.y + boundingRect.height) +
+                        " elapsed time: " + df.format(timeInterval * i));
+                TableRow row = csvOutput.addRow();
+                row.setString("Filename", files[i].getName());
+                row.setString("Elapsed Time (sec)", df.format(timeInterval * i));
+                row.setInt("Highest Pixel", boundingRect.y);
+                row.setInt("Lowest Pixel", boundingRect.y + boundingRect.height);
+            }else {
+                // Set output image
+                sourceImage.copyTo(outputImage);
+
+                // Record results
+                // N/A indicates nothing detected
+                textOutput.println("Image " + files[i].getName() +
+                        " highest pixel: N/A" +
+                        " lowest pixel: N/A" +
+                        " elapsed time: " + df.format(timeInterval * i));
+                TableRow row = csvOutput.addRow();
+                row.setString("Filename", files[i].getName());
+                row.setString("Elapsed Time (sec)", df.format(timeInterval * i));
+                row.setString("Highest Pixel", "N/A");
+                row.setString("Lowest Pixel", "N/A");
+            }
 
             displayImage = toPImage(outputImage);
         }
@@ -874,6 +928,17 @@ public class Main extends PApplet{
 
         // When finished
         analysisDone = true;
+    }
+
+    private class DisposeHandler{
+
+        DisposeHandler(PApplet applet){
+            applet.registerMethod("dispose", this);
+        }
+
+        public void dispose(){
+
+        }
     }
 
     /**

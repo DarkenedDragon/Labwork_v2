@@ -210,6 +210,8 @@ public class GripPipeline {
 		return cvDilateOutput;
 	}
 
+	public Mat roiOutput() {return roiOuput;}
+
 	public Mat roiPreview(Mat input) {
 		if (roi) {
 			//ROI(input, roiTopCorner, roiBottomCorner);
