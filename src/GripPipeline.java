@@ -212,9 +212,10 @@ public class GripPipeline {
 
 	public Mat roiPreview(Mat input) {
 		if (roi) {
-			ROI(input, roiTopCorner, roiBottomCorner);
+			//ROI(input, roiTopCorner, roiBottomCorner);
+			Imgproc.rectangle(input, roiTopCorner, roiBottomCorner, new Scalar(255, 0, 0), 2);
 		}
-		return roiOuput;
+		return input;
 	}
 
 

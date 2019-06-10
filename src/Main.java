@@ -1,12 +1,21 @@
 import controlP5.*;
 import controlP5.Button;
-import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Size;
+import controlP5.Range;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import processing.core.PApplet;
 import processing.core.PImage;
+import processing.data.Table;
+import processing.data.TableRow;
+
+import java.io.File;
+import java.io.PrintWriter;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Main window class.
@@ -23,35 +32,40 @@ public class Main extends PApplet{
     private PImage displayImage, originalDisplayImage, colorDropperImg;
     private final int RANGE_HEIGHT = 40;
     private final int BACKGROUND_COLOR = 255; // White
-    private int originalDisplayImageX, originalDisplayImageY, originalDisplayImageW, originalDisplayImageH;
+    private int originalDisplayImageX, originalDisplayImageY, originalDisplayImageWidth, originalDisplayImageHeight;
     private int displayImageBoundaryX, displayImageBoundaryY, displayImageBoundaryWidth, displayImageBoundaryHeight;
     private int controlsX, controlsWidth, controlsHeight, controlsPadding, controlsStartY, controlsTextPadding;
+    private int percentDone = 0;
     private boolean colorDropperEnbabled, hslVisited, rgbVisited, ROIEnabled;
     private boolean topCornerSelected = false;
     private boolean bottomCornerSelected = false;
+    private boolean analysisDone = false;
     private String initalImageFilepath;
     private String allImagesFilepath;
+    private String imgErrorMessage = "";
 
     private Range hueRange, saturationRange, luminescenceRange;
     private Range redRange, greenRange, blueRange;
     private Toggle thresholdToggle;
-    private Toggle ROISwitch;
     private Button colorDropperButton;
     private Button confirmButton;
     private Button selectImagesButton;
+    private Slider timeSlider;
 
-    Point topCorner;
-    Point bottomCorner;
+    private File[] files;
+
+    private Point topCorner;
+    private Point bottomCorner;
 
     private enum Threshold {
         HSL, RGB
     }
     private Threshold mode = Threshold.HSL;
 
-    private enum STAGE {
+    private enum Stage {
         SELECT_INITAL_IMAGE, SELECT_VALUES, LOAD_IMAGES, RUN_ANALYSIS
     }
-    private STAGE stage = STAGE.SELECT_INITAL_IMAGE;
+    private Stage stage = Stage.SELECT_INITAL_IMAGE;
     @Override
     public void settings() {
         size(1200, 800);
@@ -78,6 +92,7 @@ public class Main extends PApplet{
                 .setRange(0,180)
                 .setRangeValues(0.0f,180.0f)
                 .setColorCaptionLabel(BACKGROUND_COLOR)
+                .setLock(true)
                 // after the initialization we turn broadcast back on again
                 .setBroadcast(true);
 
@@ -89,6 +104,7 @@ public class Main extends PApplet{
                 .setRange(0,255)
                 .setRangeValues(0.0f,255.0f)
                 .setColorCaptionLabel(BACKGROUND_COLOR)
+                .setLock(true)
                 // after the initialization we turn broadcast back on again
                 .setBroadcast(true);
 
@@ -100,6 +116,7 @@ public class Main extends PApplet{
                 .setRange(0,255)
                 .setRangeValues(0.0f,255.0f)
                 .setColorCaptionLabel(BACKGROUND_COLOR)
+                .setLock(true)
                 // after the initialization we turn broadcast back on again
                 .setBroadcast(true);
 
@@ -148,6 +165,7 @@ public class Main extends PApplet{
                 .setSize(60, 30)
                 .setValue(true)
                 .setMode(ControlP5.SWITCH)
+                .setLock(true)
                 .setBroadcast(true);
 
         colorDropperButton = cp5.addButton("colorDropperButton")
@@ -165,22 +183,27 @@ public class Main extends PApplet{
                 .setPosition(controlsX + controlsWidth/2 - 36, 5*controlsTextPadding + 4*RANGE_HEIGHT - 20)
                 .setSize(76, 50)
                 .setValue(0)
+                .setLock(true)
                 .setBroadcast(true);
 
         confirmButton.getCaptionLabel().setSize(20);
 
-        ROISwitch = cp5.addToggle("ROI")
-                .setBroadcast(false)
-                .setPosition(controlsX + controlsWidth/2 - 120, 4*controlsTextPadding + 3*RANGE_HEIGHT)
-                .setSize(30, 30)
-                .setVisible(false)
-                .setLock(true)
-                .setBroadcast(true);
-
-        selectImagesButton = cp5.addButton("Select Image")
+        selectImagesButton = cp5.addButton("selectImage")
                 .setBroadcast(false)
                 .setPosition((controlsX - controlsPadding)/2, height/2)
                 .setSize(100, 20)
+                .setLabel("Select Image")
+                .setBroadcast(true);
+
+        timeSlider = cp5.addSlider("time")
+                .setBroadcast(false)
+                .setPosition(controlsX, 4*controlsTextPadding + 3*RANGE_HEIGHT)
+                .setSize(controlsWidth, RANGE_HEIGHT)
+                .setValue(5)
+                .setRange(0, 600)
+                .setLabel("")
+                .setVisible(false)
+                .setLock(true)
                 .setBroadcast(true);
 
         selectImagesButton.getCaptionLabel().setSize(12);
@@ -198,8 +221,8 @@ public class Main extends PApplet{
         imagePipeline = new GripPipeline();
 
         // Load inital image
-        initialImage = Imgcodecs.imread("res/images/image.JPG");
-        Imgproc.resize(initialImage, initialImage, new Size(controlsX - controlsPadding, height));
+        //initialImage = Imgcodecs.imread("res/images/image.JPG");
+        //Imgproc.resize(initialImage, initialImage, new Size(controlsX - controlsPadding, height));
 
         // Process image, should be all white since the ranges are maxed
         //imagePipeline.process(initialImage);
@@ -207,30 +230,27 @@ public class Main extends PApplet{
         //displayImage = toPImage(imagePipeline.cvDilateOutput());
         //displayImage.resize(controlsX - controlsPadding, height);
 
-        originalDisplayImage = toPImage(initialImage);
-        originalDisplayImage.resize(controlsWidth, controlsWidth);
+        //originalDisplayImage = toPImage(initialImage);
+        //originalDisplayImage.resize(controlsWidth, controlsWidth);
 
-        displayImage = originalDisplayImage.copy();
-        displayImage.resize(controlsX - controlsPadding, height);
+        //displayImage = originalDisplayImage.copy();
+        //displayImage.resize(controlsX - controlsPadding, height);
 
         originalDisplayImageX = controlsX;
-        originalDisplayImageY = height - originalDisplayImage.height - controlsPadding;
-        originalDisplayImageH = originalDisplayImageW = controlsWidth;
+        originalDisplayImageY = height - controlsWidth - controlsPadding;
+        originalDisplayImageHeight = originalDisplayImageWidth = controlsWidth;
 
         displayImageBoundaryX = 0;
         displayImageBoundaryY = 0;
         displayImageBoundaryWidth = controlsX - controlsPadding;
         displayImageBoundaryHeight = height;
 
-        image(displayImage, 0.0f, 0.0f);
-        image(originalDisplayImage, originalDisplayImageX, originalDisplayImageY);
-
         // Misc.
         hslVisited = false;
         rgbVisited = false;
 
         topCorner = new Point(0,0);
-        bottomCorner = new Point(displayImage.width, displayImage.height);
+        bottomCorner = new Point(displayImageBoundaryWidth, displayImageBoundaryHeight);
     }
 
     @Override
@@ -239,6 +259,44 @@ public class Main extends PApplet{
 
         switch (stage){
             case SELECT_INITAL_IMAGE:
+                // Draw image bounding boxes
+                stroke(0);
+                noFill();
+                // Display image
+                rect(displayImageBoundaryX, displayImageBoundaryY, displayImageBoundaryWidth, displayImageBoundaryHeight);
+                // Original Image
+                rect(originalDisplayImageX, originalDisplayImageY, originalDisplayImageWidth, originalDisplayImageHeight);
+
+                // Directions
+                fill(0);
+                textSize(16);
+                if (!imgErrorMessage.equals("")) {
+                    text(imgErrorMessage, selectImagesButton.getPosition()[0] - (textWidth(imgErrorMessage) - selectImagesButton.getWidth())/2, selectImagesButton.getPosition()[1] - selectImagesButton.getHeight());
+                }else {
+                    String directions = "Select Image for testing";
+                    text(directions, selectImagesButton.getPosition()[0] - (textWidth(directions) - selectImagesButton.getWidth())/2, selectImagesButton.getPosition()[1] - selectImagesButton.getHeight());
+                }
+                textSize(12);
+
+                // Draw range labels
+                if (mode == Threshold.HSL) {
+                    text(hueRange.getLabel(), hueRange.getPosition()[0], hueRange.getPosition()[1] - 10);
+                    text(saturationRange.getLabel(), saturationRange.getPosition()[0], saturationRange.getPosition()[1] - 10);
+                    text(luminescenceRange.getLabel(), luminescenceRange.getPosition()[0], luminescenceRange.getPosition()[1] - 10);
+                }else if (mode == Threshold.RGB){
+                    text(redRange.getLabel(), redRange.getPosition()[0], redRange.getPosition()[1] - 10);
+                    text(greenRange.getLabel(), greenRange.getPosition()[0], greenRange.getPosition()[1] - 10);
+                    text(blueRange.getLabel(), blueRange.getPosition()[0], blueRange.getPosition()[1] - 10);
+                }
+
+                text("HSL",
+                        thresholdToggle.getPosition()[0] - thresholdToggle.getWidth()/2,
+                        thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
+                text("RGB",
+                        thresholdToggle.getPosition()[0] + thresholdToggle.getWidth() + 6,
+                        thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
+
+                text("Unprocessed Image", controlsX, height - originalDisplayImageHeight - controlsPadding + controlsWidth + 12);
 
                 break;
             case SELECT_VALUES:
@@ -258,7 +316,6 @@ public class Main extends PApplet{
                 }
 
 
-
                 text("HSL",
                         thresholdToggle.getPosition()[0] - thresholdToggle.getWidth()/2,
                         thresholdToggle.getPosition()[1] + thresholdToggle.getHeight()/2 + 3);
@@ -271,8 +328,8 @@ public class Main extends PApplet{
 
                 // Change the cursor to the color dropper when in the appropriate area
                 // which is below the threshold toggle and bounded the original image
-                if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageW) &&
-                        inRange(mouseY, controlsStartY + 4 * controlsTextPadding + 3 * RANGE_HEIGHT, originalDisplayImageY + originalDisplayImageH) &&
+                if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageWidth) &&
+                        inRange(mouseY, controlsStartY + 4 * controlsTextPadding + 3 * RANGE_HEIGHT, originalDisplayImageY + originalDisplayImageHeight) &&
                         mode == Threshold.RGB && colorDropperEnbabled) {
 
                     cursor(colorDropperImg, 0, 0);
@@ -283,20 +340,70 @@ public class Main extends PApplet{
 
                 break;
             case LOAD_IMAGES:
-                image(displayImage, 0.0f, 0.0f);
+                // If we have images
+                if (files != null) {
+                    try {
+                        image(displayImage, 0.0f, 0.0f);
+                    }catch (NullPointerException e){
+                        imgErrorMessage = "Unable to load images. Please select a folder with images";
+                        text(imgErrorMessage, selectImagesButton.getPosition()[0] - (textWidth(imgErrorMessage) - selectImagesButton.getWidth())/2, selectImagesButton.getPosition()[1] - selectImagesButton.getHeight());
 
-                text("ROI",
-                        ROISwitch.getPosition()[0] - ROISwitch.getWidth(),
-                        ROISwitch.getPosition()[1] + ROISwitch.getHeight()/2 + 3);
+                    }
+                }else {
+                    // Display image frame
+                    noFill();
+                    rect(displayImageBoundaryX, displayImageBoundaryY, displayImageBoundaryWidth, displayImageBoundaryHeight);
 
-                if (ROIEnabled) {
+                    // Directions
+                    fill(0);
+                    String directions = "Select a folder with images for analysis";
+                    text(directions, selectImagesButton.getPosition()[0] - (textWidth(directions) - selectImagesButton.getWidth())/2, selectImagesButton.getPosition()[1] - selectImagesButton.getHeight());
+                }
+
+                fill(0);
+                textSize(24);
+                // Directions
+                text("Select a folder containing your\nimages then select your\nRegion of Interest\n\nPress Confirm to advance",
+                        controlsX, controlsTextPadding);
+                textSize(16);
+
+                // Time slider label
+                text("Time between images (sec)", timeSlider.getPosition()[0], timeSlider.getPosition()[1] - 10);
+                if (files != null && inRange(mouseX, displayImageBoundaryX, displayImageBoundaryX + displayImageBoundaryWidth)) {
+                    ROIEnabled = true;
                     cursor(CROSS);
                     colorDropperEnbabled = false;
+                }else{
+                    ROIEnabled = false;
+                    cursor(ARROW);
                 }
 
 
                 break;
             case RUN_ANALYSIS:
+                image(displayImage, 0.0f, 0.0f);
+
+                if (!analysisDone) {
+                    fill(0);
+                    textSize(24);
+                    // Directions
+                    text("Analyzing images\n" + percentDone + "% done", controlsX, controlsTextPadding);
+                }else {
+                    fill(0);
+                    textSize(24);
+                    // Results
+                    String doneMessage =
+                            "Analysis finished sucessfully\n" +
+                            "Please close the program\n" +
+                            "Results are in results.csv and results.txt\n" +
+                            "at project root";
+                    fill(0, 255, 0);
+                    rect(width/2 - textWidth(doneMessage)/2 - 12, height/2 - 48, textWidth(doneMessage) + 24, 24*8);
+                    fill(0);
+                    textAlign(CENTER);
+                    text(doneMessage, width/2, height/2);
+                }
+
                 break;
         }
     }
@@ -317,10 +424,13 @@ public class Main extends PApplet{
                 System.out.println("Top Corner: x=" + topCorner.x + " y=" + topCorner.y);
                 System.out.println("Bottom Corner: x=" + bottomCorner.x + " y=" + bottomCorner.y);
 
-                //imagePipeline.enableROI(topCorner, bottomCorner);
-                //imagePipeline.process(initialImage);
-                //displayImage = toPImage(imagePipeline.cvDilateOutput());
-                //displayImage = toPImage(imagePipeline.roiPreview(initialImage));
+                Mat roiImage = new Mat();
+                initialImage.copyTo(roiImage);
+                imagePipeline.enableROI(topCorner, bottomCorner);
+                displayImage = toPImage(imagePipeline.roiPreview(roiImage));
+
+                topCornerSelected = false;
+                bottomCornerSelected = false;
             }
 
         }
@@ -334,8 +444,8 @@ public class Main extends PApplet{
         System.out.println("Blue: " + blue(color));
         */
         if (mode == Threshold.RGB) {
-            if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageW) &&
-            inRange(mouseY, originalDisplayImageY, originalDisplayImageY + originalDisplayImageH) &&
+            if (inRange(mouseX, originalDisplayImageX, originalDisplayImageX + originalDisplayImageWidth) &&
+            inRange(mouseY, originalDisplayImageY, originalDisplayImageY + originalDisplayImageHeight) &&
             colorDropperEnbabled) {
                 final int radius = 20;
                 redRange.setRangeValues(red(color) - radius, red(color) + radius);
@@ -353,22 +463,174 @@ public class Main extends PApplet{
         colorDropperEnbabled = !colorDropperEnbabled;
     }
 
-
-    /**
-     * Event handler for the ROI toggle
-     * @param theValue
-     */
-    public void ROI(int theValue){
-        System.out.println("ROI selected");
-        ROIEnabled = ROISwitch.getBooleanValue();
-    }
-
     /**
      * Event handler for the threshold switch toggle
      * @param theFlag
      */
     public void thresholdMode(boolean theFlag){
         switchModes();
+    }
+
+    public void selectImage(int theValue){
+        System.out.println("Image select");
+        // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
+        //selectImagesButton.setPosition(width + 100, height + 100);
+
+        if (stage == Stage.SELECT_INITAL_IMAGE) {
+            selectInput("Select Sample Image", "fileSelector");
+        }else if (stage == Stage.LOAD_IMAGES) {
+            selectFolder("Select Images to Analyze", "folderSelector");
+        }
+
+    }
+
+    /**
+     * Method for getting the folder containing all the images
+     * @param selection
+     */
+    public void folderSelector(File selection){
+        if (selection == null) {
+            // TODO Do something in this case
+            System.out.println("Window closed");
+        }else {
+            System.out.println("Filepath: " + selection.getAbsolutePath());
+            File directory = new File(selection.getAbsolutePath());
+            if (directory.isDirectory()) {
+                files = directory.listFiles();
+
+                try {
+                    displayImage = loadImage(files[files.length - 1].getAbsolutePath());
+                    displayImage.resize(displayImageBoundaryWidth, displayImageBoundaryHeight);
+
+                    // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
+                    selectImagesButton.setPosition(width + 100, height + 100);
+                } catch(NullPointerException e) {
+                    //e.printStackTrace();
+                    imgErrorMessage = "Unable to load images. Please select a folder with images";
+                }
+
+                //ROISwitch.setLock(true);
+            }else {
+                files = null;
+            }
+        }
+    }
+
+    /**
+     * Method for getting the test image
+     * @param selection
+     */
+    public void fileSelector(File selection){
+        if (selection == null){
+            System.out.println("Window closed");
+        }else {
+            System.out.println("Filepath: " + selection.getAbsolutePath());
+
+            try {
+                // Load inital image
+                initialImage = Imgcodecs.imread(selection.getAbsolutePath());
+                Imgproc.resize(initialImage, initialImage, new Size(controlsX - controlsPadding, height));
+
+                // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
+                selectImagesButton.setPosition(width + 100, height + 100);
+                selectImagesButton.setLabel("Select Images");
+
+                switchStage(Stage.SELECT_VALUES);
+            }catch (Exception e){
+                System.out.println("Invalid file loaded");
+                imgErrorMessage = "Unable to load image. Please select a file that is an image";
+            }
+        }
+
+    }
+    
+    private void switchStage(Stage newStage){
+        switch (newStage){
+            case SELECT_INITAL_IMAGE:
+                // Lock everything down
+                hueRange.setLock(true);
+                saturationRange.setLock(true);
+                luminescenceRange.setLock(true);
+                redRange.setLock(true);
+                greenRange.setLock(true);
+                blueRange.setLock(true);
+                colorDropperButton.setLock(true);
+                confirmButton.setLock(true);
+                thresholdToggle.setLock(true);
+
+                // Bring back select image
+                selectImagesButton.setPosition((controlsX - controlsPadding)/2, height/2);
+
+                stage = Stage.SELECT_INITAL_IMAGE;
+
+                break;
+            case SELECT_VALUES:
+                originalDisplayImage = toPImage(initialImage);
+                originalDisplayImage.resize(controlsWidth, controlsWidth);
+
+                displayImage = originalDisplayImage.copy();
+                displayImage.resize(controlsX - controlsPadding, height);
+
+                hueRange.setLock(false);
+                saturationRange.setLock(false);
+                luminescenceRange.setLock(false);
+                redRange.setLock(true);
+                greenRange.setLock(true);
+                blueRange.setLock(true);
+                colorDropperButton.setLock(true);
+                confirmButton.setLock(false);
+                thresholdToggle.setLock(false);
+
+                stage = Stage.SELECT_VALUES;
+                break;
+
+            case LOAD_IMAGES:
+                // Remove the old GUI elements
+                hueRange.setVisible(false);
+                saturationRange.setVisible(false);
+                luminescenceRange.setVisible(false);
+                redRange.setVisible(false);
+                greenRange.setVisible(false);
+                blueRange.setVisible(false);
+                colorDropperButton.setVisible(false);
+                thresholdToggle.setVisible(false);
+                timeSlider.setVisible(true);
+
+                hueRange.setLock(true);
+                saturationRange.setLock(true);
+                luminescenceRange.setLock(true);
+                redRange.setLock(true);
+                greenRange.setLock(true);
+                blueRange.setLock(true);
+                colorDropperButton.setLock(true);
+                thresholdToggle.setLock(true);
+                timeSlider.setLock(false);
+
+                // Bring back select image
+                selectImagesButton.setPosition((controlsX - controlsPadding)/2, height/2);
+
+                stage = Stage.LOAD_IMAGES;
+
+                break;
+            case RUN_ANALYSIS:
+                // Remove GUI
+                timeSlider.setVisible(false);
+                timeSlider.setLock(false);
+                confirmButton.setVisible(false);
+                confirmButton.setLock(true);
+
+                // Run the analysis
+                thread("analyze");
+
+                stage = Stage.RUN_ANALYSIS;
+                break;
+            
+                default:
+                    System.out.println("You aren't going anywhere!");
+                    break;
+                
+                
+        }
     }
 
     private void switchModes(){
@@ -446,34 +708,13 @@ public class Main extends PApplet{
 
         if (controlEvent.isFrom("Confirm")) {
             System.out.println("Confirmed!");
-            stage = STAGE.LOAD_IMAGES;
-
-            // Remove the old GUI elements
-            hueRange.setVisible(false);
-            saturationRange.setVisible(false);
-            luminescenceRange.setVisible(false);
-            redRange.setVisible(false);
-            greenRange.setVisible(false);
-            blueRange.setVisible(false);
-            colorDropperButton.setVisible(false);
-            thresholdToggle.setVisible(false);
-
-            hueRange.setLock(true);
-            saturationRange.setLock(true);
-            luminescenceRange.setLock(true);
-            redRange.setLock(true);
-            greenRange.setLock(true);
-            blueRange.setLock(true);
-            colorDropperButton.setLock(true);
-            thresholdToggle.setLock(true);
-
-            ROISwitch.setVisible(true);
-            ROISwitch.setLock(false);
-
-            //System.out.println("ROI state: " + ROISwitch.getInfo());
-
-            //confirmButton.setVisible(false);
-            //confirmButton.setLock(true);
+            // Can't turn off confirm because it locks up all other elements for some reason
+            if (stage == Stage.SELECT_VALUES) {
+                switchStage(Stage.LOAD_IMAGES);
+            }else if (stage == Stage.LOAD_IMAGES) {
+                System.out.println("Move on!");
+                switchStage(Stage.RUN_ANALYSIS);
+            }
         }
 
         if (mode == Threshold.HSL){
@@ -557,6 +798,82 @@ public class Main extends PApplet{
 
         return (value <= b && value >= a);
 
+    }
+
+    public void analyze(){
+        // Contains the results
+        Date date = new Date();
+        DateFormat format = new SimpleDateFormat("yyyy_MM_dd_HH_mm");
+        DecimalFormat df = new DecimalFormat("#.###");
+        String time = format.format(date);
+
+        PrintWriter textOutput = createWriter("Results\\results_" + time + ".txt");
+        Table csvOutput = new Table();
+        csvOutput.addColumn("Filename");
+        csvOutput.addColumn("Elapsed Time (sec)");
+        csvOutput.addColumn("Highest Pixel");
+        csvOutput.addColumn("Lowest Pixel");
+
+        //Nice things
+        percentDone = 0;
+
+        double timeInterval = timeSlider.getValue();
+
+        for (int i = 0; i< files.length; i++) {
+            percentDone = (int)(((double)i / files.length) * 100.0);
+            System.out.println((i / files.length) * 100.0);
+            // Load in image
+            Mat sourceImage = Imgcodecs.imread(files[i].getAbsolutePath());
+
+            // Process the image
+            imagePipeline.process(sourceImage);
+
+            // Find contours
+            ArrayList<MatOfPoint> contours = new ArrayList<>();
+            Mat hierarchy = new Mat();
+            Imgproc.findContours(imagePipeline.cvDilateOutput(), contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
+
+            // Find largest contour
+            MatOfPoint largestContour = contours.get(0);
+            for (MatOfPoint contour : contours){
+                if (Imgproc.contourArea(contour) > Imgproc.contourArea(largestContour)) {
+                    largestContour = contour;
+                }
+            }
+
+            // Get bounding box
+            Rect boundingRect = Imgproc.boundingRect(largestContour);
+            Point topCorner = new Point(boundingRect.x, boundingRect.y);
+            Point bottomCorner = new Point(boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height);
+            // Draw bounding box
+            Imgproc.rectangle(sourceImage, topCorner, bottomCorner, new Scalar(0, 255, 0), 5);
+
+            // Resize
+            Mat outputImage = new Mat();
+            Imgproc.resize(sourceImage, outputImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+
+            // Record results
+            //output.print("Image " + f.getName() + " lowest point : " + lowPoint[file] + " pixels");
+            textOutput.println("Image " + files[i].getName() +
+                    " highest pixel: " + boundingRect.y +
+                    " lowest pixel: " + (boundingRect.y + boundingRect.height) +
+                    " elapsed time: " + df.format(timeInterval * i));
+            TableRow row = csvOutput.addRow();
+            row.setString("Filename", files[i].getName());
+            row.setString("Elapsed Time (sec)", df.format(timeInterval * i));
+            row.setInt("Highest Pixel", boundingRect.y);
+            row.setInt("Lowest Pixel", boundingRect.y + boundingRect.height);
+
+            displayImage = toPImage(outputImage);
+        }
+
+        // Close the writers
+        textOutput.flush();
+        textOutput.close();
+        saveTable(csvOutput, "Results\\results_" + time + ".csv");
+
+        // When finished
+        analysisDone = true;
     }
 
     /**
