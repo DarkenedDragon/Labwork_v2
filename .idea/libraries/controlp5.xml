@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="controlP5">
+    <CLASSES>
+      <root url="file://$USER_HOME$/Documents/Processing/libraries/controlP5/library" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$USER_HOME$/Documents/Processing/libraries/controlP5/library" recursive="false" />
+  </library>
+</component>
