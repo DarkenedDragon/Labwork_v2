@@ -2,12 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e62d508f-78c1-4f0f-a471-7fb2454a6a0f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/controlp5.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/controlp5.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/controlp5.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Labwork.iml" beforeDir="false" afterPath="$PROJECT_DIR$/Labwork.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Labwork/GripPipeline.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/GripPipeline.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Labwork/Main$Threshold.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/Main$Threshold.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/Labwork/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Labwork/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/GripPipeline.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/GripPipeline.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -21,10 +21,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Main.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="112">
+              <caret line="397" column="71" selection-start-line="397" selection-start-column="63" selection-end-line="397" selection-end-column="71" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -32,20 +33,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/.gitignore">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="102">
-              <caret line="6" column="9" lean-forward="true" selection-start-line="6" selection-start-column="9" selection-end-line="6" selection-end-column="9" />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/GripPipeline.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3417">
-              <caret line="216" column="14" selection-start-line="216" selection-start-column="14" selection-end-line="216" selection-end-column="14" />
+            <state relative-caret-position="226">
+              <caret line="225" column="29" lean-forward="true" selection-start-line="225" selection-start-column="29" selection-end-line="225" selection-end-column="29" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#3430#3431#0" expanded="true" />
@@ -73,6 +65,10 @@
       <find>files</find>
       <find>files != null</find>
       <find>color</find>
+      <find>Move On</find>
+      <find>ROIEnabled</find>
+      <find>newImage</find>
+      <find>roiImage</find>
     </findStrings>
     <replaceStrings>
       <replace>sat</replace>
@@ -88,9 +84,9 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/src/ImageAnalyzer.java" />
+        <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/src/GripPipeline.java" />
         <option value="$PROJECT_DIR$/src/Main.java" />
-        <option value="$PROJECT_DIR$/.gitignore" />
       </list>
     </option>
   </component>
@@ -105,7 +101,6 @@
     </navigator>
     <panes>
       <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -118,10 +113,15 @@
               <item name="Labwork" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="Labwork" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+            </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -218,7 +218,7 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="f4ec521b-cb44-4d08-95e5-afb5b2874fb8" name="Default Changelist" comment="" />
+      <changelist id="e62d508f-78c1-4f0f-a471-7fb2454a6a0f" name="Default Changelist" comment="" />
       <created>1560014186281</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
@@ -245,13 +245,21 @@
       <option name="project" value="LOCAL" />
       <updated>1560133153436</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="added gitignore">
+      <created>1560204227230</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1560204227230</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.28582996" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1659919" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -260,7 +268,7 @@
       <window_info id="Favorites" order="6" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3285968" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.26110125" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.26110125" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39964476" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -284,7 +292,8 @@
     <MESSAGE value="add .gitignore" />
     <MESSAGE value="Added confirm button" />
     <MESSAGE value="added analysis" />
-    <option name="LAST_COMMIT_MESSAGE" value="added analysis" />
+    <MESSAGE value="added gitignore" />
+    <option name="LAST_COMMIT_MESSAGE" value="added gitignore" />
   </component>
   <component name="editorHistoryManager">
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_144/src.zip!/java/awt/image/ColorModel.java">
@@ -377,10 +386,17 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/ImageAnalyzer.java" />
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" column="9" lean-forward="true" selection-start-line="6" selection-start-column="9" selection-end-line="6" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/GripPipeline.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3417">
-          <caret line="216" column="14" selection-start-line="216" selection-start-column="14" selection-end-line="216" selection-end-column="14" />
+        <state relative-caret-position="226">
+          <caret line="225" column="29" lean-forward="true" selection-start-line="225" selection-start-column="29" selection-end-line="225" selection-end-column="29" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#3430#3431#0" expanded="true" />
@@ -391,17 +407,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Main.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
+        <state relative-caret-position="112">
+          <caret line="397" column="71" selection-start-line="397" selection-start-column="63" selection-end-line="397" selection-end-column="71" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="9" lean-forward="true" selection-start-line="6" selection-start-column="9" selection-end-line="6" selection-end-column="9" />
         </state>
       </provider>
     </entry>

@@ -17,6 +17,6 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="opencv-410" level="project" />
-    <orderEntry type="library" name="controlP5" level="project" />
+    <orderEntry type="library" name="controlp5" level="project" />
   </component>
 </module>

@@ -28,7 +28,7 @@ public class Main extends PApplet{
 
     private ControlP5 cp5;
     private GripPipeline imagePipeline;
-    private Mat initialImage;
+    private Mat initialImage, roiImage;
     private PImage displayImage, originalDisplayImage, colorDropperImg;
     private final int RANGE_HEIGHT = 40;
     private final int BACKGROUND_COLOR = 255; // White
@@ -36,7 +36,7 @@ public class Main extends PApplet{
     private int displayImageBoundaryX, displayImageBoundaryY, displayImageBoundaryWidth, displayImageBoundaryHeight;
     private int controlsX, controlsWidth, controlsHeight, controlsPadding, controlsStartY, controlsTextPadding;
     private int percentDone = 0;
-    private boolean colorDropperEnbabled, hslVisited, rgbVisited, ROIEnabled;
+    private boolean colorDropperEnbabled, hslVisited, rgbVisited, ROIEnabled, ROIDrawEnabled;
     private boolean topCornerSelected = false;
     private boolean bottomCornerSelected = false;
     private boolean analysisDone = false;
@@ -218,6 +218,7 @@ public class Main extends PApplet{
 
         // Initialize ROI
         ROIEnabled = false;
+        ROIDrawEnabled = false;
 
         // Initialize mode. Default is HSL
         mode = Threshold.HSL;
@@ -254,8 +255,8 @@ public class Main extends PApplet{
         hslVisited = false;
         rgbVisited = false;
 
-        topCorner = new Point(0,0);
-        bottomCorner = new Point(displayImageBoundaryWidth, displayImageBoundaryHeight);
+        //topCorner = new Point(0,0);
+        ///bottomCorner = new Point(displayImageBoundaryWidth, displayImageBoundaryHeight);
 
         // File writing
         Date date = new Date();
@@ -393,10 +394,21 @@ public class Main extends PApplet{
                     ROIEnabled = true;
                     cursor(CROSS);
                     colorDropperEnbabled = false;
+                    // Update the ROI bounding box
+                    if (ROIDrawEnabled && topCorner != null && roiImage != null) {
+                        int x = (int)map(mouseX, 0, displayImageBoundaryWidth, 0, roiImage.width());
+                        int y = (int)map(mouseY, 0, displayImageBoundaryHeight, 0, roiImage.height());
+                        Point tempBottomCorner = new Point(x, y);
+                        displayImage = toPImage(imagePipeline.roiPreview(roiImage, topCorner, tempBottomCorner));
+                    }
                 }else{
                     ROIEnabled = false;
+                    ROIDrawEnabled = false;
                     cursor(ARROW);
                 }
+
+
+
                 break;
             case RUN_ANALYSIS:
                 image(displayImage, 0.0f, 0.0f);
@@ -413,7 +425,7 @@ public class Main extends PApplet{
                     String doneMessage =
                             "Analysis finished sucessfully\n" +
                             "Please close the program\n" +
-                            "Results are in results.csv and results.txt\n" +
+                            "Results are in the Results folder\n" +
                             "at project root";
                     fill(0, 255, 0);
                     rect(width/2 - textWidth(doneMessage)/2 - 12, height/2 - 48, textWidth(doneMessage) + 24, 24*8);
@@ -444,11 +456,13 @@ public class Main extends PApplet{
             // Because displayImage is from 0,0 it coordinates should be the windows
             if (!topCornerSelected) {
                 topCornerSelected = true;
+                ROIDrawEnabled = true;
                 int x = (int)map(mouseX, 0, displayImageBoundaryWidth, 0, initialImage.width());
                 int y = (int)map(mouseY, 0, displayImageBoundaryHeight, 0, initialImage.height());
                 topCorner = new Point(x, y);
             }else if (topCornerSelected && !bottomCornerSelected) {
                 bottomCornerSelected = true;
+                ROIDrawEnabled = false;
                 int x = (int)map(mouseX, 0, displayImageBoundaryWidth, 0, initialImage.width());
                 int y = (int)map(mouseY, 0, displayImageBoundaryHeight, 0, initialImage.height());
                 bottomCorner = new Point(x, y);
@@ -517,8 +531,6 @@ public class Main extends PApplet{
 
     public void selectImage(int theValue){
         System.out.println("Image select");
-        // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
-        //selectImagesButton.setPosition(width + 100, height + 100);
 
         if (stage == Stage.SELECT_INITAL_IMAGE) {
             selectInput("Select Sample Image", "fileSelector");
@@ -543,20 +555,16 @@ public class Main extends PApplet{
                 files = directory.listFiles();
 
                 try {
-                    Mat newImage = Imgcodecs.imread(files[files.length - 1].getAbsolutePath());
-                    Imgproc.resize(newImage, newImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
-                    displayImage = toPImage(newImage);
+                    roiImage = Imgcodecs.imread(files[files.length - 1].getAbsolutePath());
+                    Imgproc.resize(roiImage, roiImage, new Size(displayImageBoundaryWidth, displayImageBoundaryHeight));
+                    displayImage = toPImage(roiImage);
                     //displayImage.resize(displayImageBoundaryWidth, displayImageBoundaryHeight);
 
-                    Thread.sleep(100);
-
-                    // HACK ALERT!! Dumb library wont work when set invisible so it gets moved off screen
+                    // HACK ALERT!! Dumb library won't work when set invisible so it gets moved off screen
                     selectImagesButton.setPosition(width + 100, height + 100);
                 } catch(NullPointerException e) {
                     //e.printStackTrace();
                     imgErrorMessage = "Unable to load images. Please select a folder with images";
-                } catch (InterruptedException e) {
-                   // e.printStackTrace();
                 }
 
                 //ROISwitch.setLock(true);
@@ -761,7 +769,7 @@ public class Main extends PApplet{
             // Can't turn off confirm because it locks up all other elements for some reason
             if (stage == Stage.SELECT_VALUES) {
                 switchStage(Stage.LOAD_IMAGES);
-            }else if (stage == Stage.LOAD_IMAGES) {
+            }else if (stage == Stage.LOAD_IMAGES && files != null) {
                 System.out.println("Move on!");
                 switchStage(Stage.RUN_ANALYSIS);
             }

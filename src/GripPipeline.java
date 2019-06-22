@@ -220,6 +220,12 @@ public class GripPipeline {
 		return input;
 	}
 
+	public Mat roiPreview(Mat input, Point topCorner, Point bottomCorner) {
+	    Mat modifiedImage = input.clone();
+        Imgproc.rectangle(modifiedImage, topCorner, bottomCorner, new Scalar(255, 0, 0), 2);
+        return modifiedImage;
+    }
+
 
 
 
